@@ -8,7 +8,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"task-management/internal/cache"
 	"task-management/internal/config"
 	"task-management/internal/delivery/handlers"
@@ -17,6 +22,7 @@ import (
 	"task-management/internal/repository"
 	"task-management/internal/usecase"
 	"task-management/internal/utils/logutil"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -63,8 +69,24 @@ func main() {
 	r := router.Setup(h, log)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
-	log.Info("server listening", zap.String("addr", addr))
-	if err := r.Run(addr); err != nil {
-		log.Fatal("server error", zap.Error(err))
+	srv := &http.Server{Addr: addr, Handler: r}
+
+	go func() {
+		log.Info("server listening", zap.String("addr", addr))
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal("server error", zap.Error(err))
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Info("shutting down server")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("forced shutdown", zap.Error(err))
 	}
+	log.Info("server stopped")
 }

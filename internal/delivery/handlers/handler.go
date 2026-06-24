@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"task-management/internal/delivery/dto"
 	"task-management/internal/models"
 	"task-management/internal/ports"
 	"task-management/internal/utils/errorutil"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -52,7 +54,10 @@ func (h *TaskHandler) GetTasks(c *gin.Context) {
 	limit, _ := strconv.ParseInt(c.DefaultQuery("limit", "20"), 10, 64)
 	search := c.Query("search")
 
-	tasks, total, err := h.usecase.GetTasks(c.Request.Context(), offset, limit, search)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	tasks, total, err := h.usecase.GetTasks(ctx, offset, limit, search)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -77,7 +82,10 @@ func (h *TaskHandler) GetTaskById(c *gin.Context) {
 		return
 	}
 
-	task, err := h.usecase.GetTaskByID(c.Request.Context(), id)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	task, err := h.usecase.GetTaskByID(ctx, id)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -110,7 +118,10 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		Priority:    req.Priority,
 	}
 
-	created, err := h.usecase.CreateTask(c.Request.Context(), task)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	created, err := h.usecase.CreateTask(ctx, task)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -152,7 +163,10 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 		Priority:    req.Priority,
 	}
 
-	updated, err := h.usecase.UpdateTask(c.Request.Context(), task)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	updated, err := h.usecase.UpdateTask(ctx, task)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -178,7 +192,10 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 		return
 	}
 
-	deleted, err := h.usecase.DeleteTask(c.Request.Context(), &models.Task{Id: id})
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	deleted, err := h.usecase.DeleteTask(ctx, &models.Task{Id: id})
 	if err != nil {
 		respondError(c, err)
 		return
@@ -213,7 +230,10 @@ func (h *TaskHandler) UpdateTaskStatus(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.usecase.UpdateTaskStatus(c.Request.Context(), id, req.Status)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	updated, err := h.usecase.UpdateTaskStatus(ctx, id, req.Status)
 	if err != nil {
 		respondError(c, err)
 		return
