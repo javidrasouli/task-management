@@ -82,7 +82,7 @@ func defaults() defaultLoader {
 			"env": "development",
 		},
 		"server": map[string]any{
-			"host": "localhost",
+			"host": "",
 			"port": 8080,
 		},
 		"database": map[string]any{
